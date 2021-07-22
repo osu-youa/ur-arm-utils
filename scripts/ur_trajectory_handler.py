@@ -25,6 +25,7 @@ class URProgramManager:
             yield
         finally:
             self.program_stop_srv()
+            rospy.sleep(0.25)
             rospy.loginfo('External control disabled!')
 
     def external_control_decorator(self, func):

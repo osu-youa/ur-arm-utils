@@ -10,7 +10,8 @@ import numpy as np
 from arm_utils.srv import ExecuteTrajectory, HandleJointPlan, HandlePosePlan
 from sensor_msgs.msg import JointState
 import moveit_commander
-
+from tf2_ros import TransformListener, Buffer
+from tf2_geometry_msgs import do_transform_pose
 
 def create_joint_mapping(source_names, target_names):
     source_names = list(source_names)
@@ -25,13 +26,38 @@ def handle_joint_plan(req):
         joint_vals = joint_vals[idx_mapping]
 
     planned_traj = move_group.plan(joint_vals).joint_trajectory
-    if req.execute:
+    success = bool(planned_traj.points)
+    if success and req.execute:
         execute_traj_srv(planned_traj)
 
-    return planned_traj
+    return planned_traj, success
+
+def handle_pose_plan(req):
+
+    pose = req.pose
+    stamp = pose.header.stamp
+
+    base_frame = move_group.get_planning_frame().lstrip('/')
+    success = tf_buffer.can_transform(base_frame, pose.header.frame_id, stamp, timeout=rospy.Duration(0.5))
+    if not success:
+        raise Exception("Failed to retrieve TF!")
+    tf = tf_buffer.lookup_transform(base_frame, pose.header.frame_id, stamp)
+    pose_base = do_transform_pose(pose, tf).pose
+
+    move_group.set_pose_target(pose_base)
+    planned_traj = move_group.plan().joint_trajectory
+    success = bool(planned_traj.points)
+    if success and req.execute:
+        execute_traj_srv(planned_traj)
+
+    return planned_traj, success
+
 
 if __name__ == '__main__':
     rospy.init_node('ur_waypoint_handler')
+
+    tf_buffer = Buffer()
+    tf_listener = TransformListener(tf_buffer)
 
     robot = moveit_commander.RobotCommander()
     scene = moveit_commander.PlanningSceneInterface()
@@ -40,6 +66,7 @@ if __name__ == '__main__':
 
     execute_traj_srv = rospy.ServiceProxy('execute_trajectory', ExecuteTrajectory)
     rospy.Service('plan_joints', HandleJointPlan, handle_joint_plan)
+    rospy.Service('plan_pose', HandlePosePlan, handle_pose_plan)
 
     rospy.spin()
 

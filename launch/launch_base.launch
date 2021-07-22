@@ -1,0 +1,5 @@
+<launch>
+    <node name="servo_manager" pkg="arm_utils" type="ur_servoing.py" output="screen" />
+    <node name="traj_manager" pkg="arm_utils" type="ur_trajectory_handler.py" output="screen" />
+    <node name="waypoint_handler" pkg="arm_utils" type="ur_waypoint_handler.py" output="screen" />
+</launch>

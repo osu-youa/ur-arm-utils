@@ -2,3 +2,4 @@ geometry_msgs/PoseStamped pose
 bool execute
 ---
 trajectory_msgs/JointTrajectory traj
+bool success

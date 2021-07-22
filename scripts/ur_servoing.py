@@ -69,14 +69,19 @@ def servo_stop(*_, **__):
     return []
 
 def servo_rewind(*_, **__):
-    last_pos = np.array(JOINT_HISTORY[-1].position)
-    curr_pos = np.array(LAST_JOINT.position)
-    if np.abs(last_pos - curr_pos).sum() > np.radians(5.0):
-        rospy.logerr('The current joints are more than 5 degrees off from the last recorded joint! Not replaying...')
+
+    if IS_ACTIVE:
+        rospy.logerr('Cannot rewind while seroving is active!')
         return []
 
     if not JOINT_HISTORY:
         rospy.logwarn('No joint history to replay!')
+        return []
+
+    last_pos = np.array(JOINT_HISTORY[-1].position)
+    curr_pos = np.array(LAST_JOINT.position)
+    if np.abs(last_pos - curr_pos).sum() > np.radians(5.0):
+        rospy.logerr('The current joints are more than 5 degrees off from the last recorded joint! Not replaying...')
         return []
 
     # Convert history to joint trajectory
