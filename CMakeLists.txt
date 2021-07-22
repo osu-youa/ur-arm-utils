@@ -61,6 +61,8 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   ExecuteTrajectory.srv
+  HandleJointPlan.srv
+  HandlePosePlan.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -75,6 +77,8 @@ generate_messages(
   DEPENDENCIES
   std_msgs  # Or other packages containing msgs
   trajectory_msgs
+  sensor_msgs
+  geometry_msgs
 )
 
 ################################################

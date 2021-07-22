@@ -1,0 +1,4 @@
+sensor_msgs/JointState joint_state
+bool execute
+---
+trajectory_msgs/JointTrajectory traj
