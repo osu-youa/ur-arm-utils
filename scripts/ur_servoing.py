@@ -23,7 +23,7 @@ JOINT_HISTORY = []
 def convert_vel_to_msg(vec, a=0.5):
     if isinstance(vec, Vector3Stamped):
         vec = vec.vector
-    msg = 'speedl([{:.4f}, {:.4f}, {:.4f}, 0, 0, 0], {:.4f})'.format(vec.x, vec.y, vec.z, a)
+    msg = 'speedl([{:.4f}, {:.4f}, {:.4f}, 0, 0, 0], {:.4f}, 0.05)'.format(vec.x, vec.y, vec.z, a)
     return msg
 
 def update_joints(msg):
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     joint_sub = rospy.Subscriber('/joint_states', JointState, update_joints)
 
     urscript_topic = '/ur_hardware_interface/script_command'
-    urscript_pub = rospy.Publisher(urscript_topic, String)
+    urscript_pub = rospy.Publisher(urscript_topic, String, queue_size=1)
 
 
     # MAIN LOOP
