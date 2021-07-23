@@ -43,14 +43,13 @@ if __name__ == '__main__':
     servo_stop = rospy.ServiceProxy('/servo_stop', Empty)
     servo_rewind = rospy.ServiceProxy('/servo_rewind', Empty)
     vel_pub = rospy.Publisher('/vel_command', Vector3Stamped)
-
     rospy.sleep(0.5)
 
+    # Configuration
     base_frame = 'base_link'
     tool_frame = 'ee_link'
 
-    # Retrieve the starting pose of the end effector
-
+    # Retrieve the starting pose of the end effector, as well as the initial joints
     t = rospy.Time.now()
     success = tf_buffer.can_transform(base_frame, tool_frame, t, timeout=rospy.Duration(0.5))
     if not success:
@@ -59,24 +58,29 @@ if __name__ == '__main__':
     start_pose = tf_to_pose(tf)
     joints_start = rospy.wait_for_message('/joint_states', JointState, timeout=0.5)
 
-    # Move the arm around close to the starting position and perform forward servoing
+    # Move the arm around in the XY plane (tool frame) and perform forward servoing
     N_SAMPLES = 3
     RADIUS = 0.05
     angles = np.linspace(0, 2*np.pi, num=N_SAMPLES, endpoint=False)
     for i, angle in enumerate(angles, start=1):
         print('Moving to target {}'.format(i))
+
+        # Construct the target pose by taking the original pose and modifying the position (orientation stays the same)
         pt_tool = PointStamped()
         pt_tool.header.frame_id = tool_frame
-        pt_tool.point = Point(0.0, RADIUS * np.cos(angle), RADIUS * np.sin(angle))
+        pt_tool.point = Point(RADIUS * np.cos(angle), RADIUS * np.sin(angle), 0.0)
         pt_base = do_transform_point(pt_tool, tf)
         target_pose = deepcopy(start_pose)
         target_pose.pose.position = pt_base.point
 
+        # Send the target and execute it
         response = plan_pose_srv(target_pose, True)
         if not response.success:
             rospy.logwarn('Planning to target {} failed, moving to next target'.format(i))
             continue
 
+        # Send the forward velocity commands
+        # Servoing mode first must be activated, and then corresponding velocity commands must be sent to the topic
         servo_activate()
         rate = rospy.Rate(10)
         start = rospy.Time.now()
@@ -85,9 +89,11 @@ if __name__ == '__main__':
             vel_msg = Vector3Stamped()
             vel_msg.header.stamp = rospy.Time.now()
             vel_msg.header.frame_id = tool_frame
-            vel_msg.vector = Vector3(0.03, 0.0, 0.0)
+            vel_msg.vector = Vector3(0.0, 0.0, 0.03)
             vel_pub.publish(vel_msg)
             rate.sleep()
+
+        # Once the servoing is done, disable servoing mode and rewind the servo motion after the user prompt
         servo_stop()
         rospy.loginfo('Done servoing!')
         raw_input('Press Enter when ready to rewind arm...')
