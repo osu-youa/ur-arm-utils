@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     # Configuration
     base_frame = 'base_link'
-    tool_frame = 'ee_link'
+    tool_frame = 'tool0'
 
     # Retrieve the starting pose of the end effector, as well as the initial joints
     t = rospy.Time.now()
