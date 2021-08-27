@@ -7,6 +7,7 @@ from tf2_geometry_msgs import do_transform_vector3
 from std_msgs.msg import String
 from tf2_ros import TransformListener, Buffer
 from std_srvs.srv import Empty
+from std_msgs.msg import Bool
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 import numpy as np
@@ -18,7 +19,7 @@ IS_ACTIVE = False
 LAST_VEL = None
 LAST_JOINT = None
 JOINT_HISTORY = []
-
+ABORT = False
 
 def convert_vel_to_msg(vec, a=0.5):
     if isinstance(vec, Vector3Stamped):
@@ -45,6 +46,12 @@ def handle_vel(vec_stamped):
 
     global LAST_VEL
     LAST_VEL = vec_base
+
+def handle_abort(msg):
+    abort = msg.data
+    if abort:
+        global ABORT
+        ABORT = True
 
 def servo_activate(*_, **__):
 
@@ -112,16 +119,23 @@ if __name__ == '__main__':
     traj_srv = rospy.ServiceProxy('execute_trajectory', ExecuteTrajectory)
     vel_sub = rospy.Subscriber('vel_command', Vector3Stamped, handle_vel, queue_size=1)
     joint_sub = rospy.Subscriber('/joint_states', JointState, update_joints, queue_size=1)
+    abort_sub = rospy.Subscriber('/abort', Bool, handle_abort, queue_size=1)
 
     urscript_topic = '/ur_hardware_interface/script_command'
     urscript_pub = rospy.Publisher(urscript_topic, String, queue_size=1)
-
 
     # MAIN LOOP
     rate = rospy.Rate(50)
     tol = np.radians(2.0)
 
     while not rospy.is_shutdown():
+
+        if ABORT and IS_ACTIVE:
+            servo_stop()
+            ABORT = False
+        elif ABORT:
+            ABORT = False
+
         if IS_ACTIVE and LAST_VEL is not None:
             msg = convert_vel_to_msg(LAST_VEL)
             urscript_pub.publish(msg)
