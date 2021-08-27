@@ -110,8 +110,8 @@ if __name__ == '__main__':
     rospy.Service('servo_stop', Empty, servo_stop)
     rospy.Service('servo_rewind', Empty, servo_rewind)
     traj_srv = rospy.ServiceProxy('execute_trajectory', ExecuteTrajectory)
-    vel_sub = rospy.Subscriber('vel_command', Vector3Stamped, handle_vel)
-    joint_sub = rospy.Subscriber('/joint_states', JointState, update_joints)
+    vel_sub = rospy.Subscriber('vel_command', Vector3Stamped, handle_vel, queue_size=1)
+    joint_sub = rospy.Subscriber('/joint_states', JointState, update_joints, queue_size=1)
 
     urscript_topic = '/ur_hardware_interface/script_command'
     urscript_pub = rospy.Publisher(urscript_topic, String, queue_size=1)
