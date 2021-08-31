@@ -17,7 +17,7 @@ class URProgramManager:
 
     @contextmanager
     def enable_external_control(self):
-        self.program_load_srv('extcontrol.urp')
+        self.program_load_srv(rospy.get_param('extcontrol', 'extcontrol.urp'))
         rospy.loginfo('External control enabled!')
         self.program_play_srv()
         rospy.sleep(0.25)
